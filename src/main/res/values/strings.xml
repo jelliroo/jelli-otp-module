@@ -1,0 +1,28 @@
+<resources>
+
+    <!--App-->
+    <string name="app_name">Jelliroo OTP</string>
+
+    <!--Default Messages-->
+    <string name="default_message_input_phone">Input your phone number</string>
+    <string name="default_message_input_otp">Input OTP</string>
+    <string name="default_submit_sms">SMS ME!</string>
+    <string name="default_submit_verify">VERIFY</string>
+    <string name="default_phone_hint">phone number</string>
+    <string name="default_otp_hint">enter the otp</string>
+    <string name="default_code_resent_message">A fresh code has been sent</string>
+    <string name="default_resend_code_message">resend the code</string>
+
+
+    <!--Argument Names-->
+    <string name="argument_base_url_name">BASE URL</string>
+    <string name="argument_countries_name">COUNTRIES</string>
+
+    <!--EditText Values-->
+    <string name="phone_code_format">+%1$s</string>
+    <string name="resend_the_code"><u>resend the code</u></string>
+    <string name="empty_phone_message">please fill this up.</string>
+
+    <string name="resend_the_code_container"><u>%1$s</u></string>
+
+</resources>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="illegal_arguments">Invalid Argument(s): %1$s</string>
+    <string name="server_error">Server Error</string>
+    <string name="verification_failed_error">Verification Failed</string>
+
+</resources>
