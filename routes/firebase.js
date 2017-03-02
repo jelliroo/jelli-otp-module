@@ -7,21 +7,37 @@ var firebaseRoutes = function(database, admin, client, codes, smsApiUrl){
   /*
 
   params: phone
-  returns 200 {}
+  returns 200 {} if ok
+          500 {error: "server error"} if server error
 
   */
   router.get('/request/:phone', function(req, res, next) {
     var phone = req.params.phone;
-    res.status(codes.OK).send({});
 
-    client.get(smsApiUrl + "/SMS/" + phone + "/AUTOGEN", function (data, response) {
+
+    var req = client.get(smsApiUrl + "/SMS/" + phone + "/AUTOGEN", function (data, response) {
 
         if(data){
           var user = database.ref('users/' + phone);
           user.set({
             otpSessionId: data.Details
           });
+          res.status(codes.OK).send({});
+        } else {
+          res.status(codes.SERVER_ERROR).send({error: "server error"});
         }
+    });
+
+    req.on('requestTimeout', function(reqs){
+      res.status(codes.SERVER_ERROR).send({error: "server error"});
+    });
+
+    req.on('responseTimeout', function(ress){
+      res.status(codes.SERVER_ERROR).send({error: "server error"});
+    });
+
+    req.on('error', function(err){
+      res.status(codes.SERVER_ERROR).send({error: "server error"});
     });
   });
 
@@ -32,6 +48,7 @@ var firebaseRoutes = function(database, admin, client, codes, smsApiUrl){
   returns: 200 {customToken} if ok
            404 {error: "You are dead to me"} if no session found
            401 {error: "You are dead to me"} if unauthorized
+           500 {error: "server error"} if server error
 
   */
 
@@ -44,7 +61,7 @@ var firebaseRoutes = function(database, admin, client, codes, smsApiUrl){
     user.once('value').then(function(snapshot){
 
       if(snapshot && snapshot.val()) {
-        client.get(smsApiUrl + "/SMS/VERIFY/" + snapshot.val().otpSessionId + "/" + input, function (data, response) {
+        var req = client.get(smsApiUrl + "/SMS/VERIFY/" + snapshot.val().otpSessionId + "/" + input, function (data, response) {
 
             if(!data){
               res.status(codes.NOT_FOUND).send({error: "You are dead to me"});
@@ -63,6 +80,19 @@ var firebaseRoutes = function(database, admin, client, codes, smsApiUrl){
               }
             }
         });
+
+        req.on('requestTimeout', function(reqs){
+          res.status(codes.SERVER_ERROR).send({error: "server error"});
+        });
+
+        req.on('responseTimeout', function(ress){
+          res.status(codes.SERVER_ERROR).send({error: "server error"});
+        });
+
+        req.on('error', function(err){
+          res.status(codes.SERVER_ERROR).send({error: "server error"});
+        });
+        
       } else {
         res.status(codes.NOTES_FOUND).send({error: "not found"})
       }

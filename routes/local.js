@@ -14,12 +14,24 @@ var localAuthRoutes = function(client, codes, smsApiUrl){
   router.get('/request/:phone', function(req, res, next) {
     var phone = req.params.phone;
 
-    client.get(smsApiUrl + "/SMS/" + phone + "/AUTOGEN", function (data, response) {
+    var req = client.get(smsApiUrl + "/SMS/" + phone + "/AUTOGEN", function (data, response) {
       if(data.Status === "Success"){
         res.status(codes.OK).send({otpSessionId: data.Details});
       } else {
         res.status(codes.SERVER_ERROR).send({error: "server error"});
       }
+    });
+
+    req.on('requestTimeout', function(reqs){
+      res.status(codes.SERVER_ERROR).send({error: "server error"});
+    });
+
+    req.on('responseTimeout', function(ress){
+      res.status(codes.SERVER_ERROR).send({error: "server error"});
+    });
+
+    req.on('error', function(err){
+      res.status(codes.SERVER_ERROR).send({error: "server error"});
     });
   });
 
@@ -37,7 +49,7 @@ var localAuthRoutes = function(client, codes, smsApiUrl){
     var input = req.params.input;
     var otpSessionId = req.params.otpSessionId;
 
-    client.get(smsApiUrl + "/SMS/VERIFY/" + otpSessionId + "/" + input, function (data, response) {
+    var req = client.get(smsApiUrl + "/SMS/VERIFY/" + otpSessionId + "/" + input, function (data, response) {
 
         if(!data){
           res.status(codes.NOT_FOUND).send({error: "You are dead to me"});
@@ -49,6 +61,19 @@ var localAuthRoutes = function(client, codes, smsApiUrl){
           }
         }
     });
+
+    req.on('requestTimeout', function(reqs){
+      res.status(codes.SERVER_ERROR).send({error: "server error"});
+    });
+
+    req.on('responseTimeout', function(ress){
+      res.status(codes.SERVER_ERROR).send({error: "server error"});
+    });
+
+    req.on('error', function(err){
+      res.status(codes.SERVER_ERROR).send({error: "server error"});
+    });
+    
   });
 
   return router;
