@@ -3,9 +3,11 @@ package com.jelliroo.api.otp;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
@@ -101,6 +103,8 @@ public class OTPActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private CoordinatorLayout coordinatorLayout;
 
+    private ArrayAdapter<Country> countryArrayAdapter;
+
     public void loadViews(){
         submit = (Button) findViewById(R.id.submit);
         message = (TextView) findViewById(R.id.message);
@@ -119,13 +123,46 @@ public class OTPActivity extends AppCompatActivity {
         phoneNumber.setHint(phoneHint);
         otpCode.setHint(otpHint);
         resendCode.setText(getString(R.string.resend_the_code_container, resendCodeMessage));
-        resendCode.setVisibility(View.GONE);
+
+        if(otpVerificationMode){
+            resendCode.setVisibility(View.VISIBLE);
+            message.setText(otpMessage);
+            submit.setText(verifySubmitMessage);
+            requestOTPContainer.setVisibility(View.GONE);
+            verifyOTPContainer.setVisibility(View.VISIBLE);
+        } else {
+            resendCode.setVisibility(View.GONE);
+            message.setText(phoneMessage);
+            submit.setText(requestSubmitMessage);
+            requestOTPContainer.setVisibility(View.VISIBLE);
+            verifyOTPContainer.setVisibility(View.GONE);
+        }
+
+        if(loadingMode){
+            message.setAlpha(1);
+            progressBar.setVisibility(View.VISIBLE);
+            progressBar.setAlpha(1f);
+            coordinatorLayout.setAlpha(0.3f);
+            submit.setEnabled(false);
+            submit.setAlpha(0.3f);
+
+            if(otpVerificationMode){
+                otpCode.setEnabled(false);
+                resendCode.setEnabled(false);
+                resendCode.setAlpha(0.3f);
+            } else {
+                countrySpinner.setEnabled(false);
+                phoneNumber.setEnabled(false);
+                phoneCode.setEnabled(false);
+            }
+        }
+
         SpannableString content = new SpannableString(resendCodeMessage);
         content.setSpan(new UnderlineSpan(), 0, resendCodeMessage.length(), 0);
         resendCode.setText(content);
-        message.setText(phoneMessage);
-        submit.setText(requestSubmitMessage);
-        ArrayAdapter<Country> countryArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, countries);
+
+
+        countryArrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, countries);
         countrySpinner.setAdapter(countryArrayAdapter);
         phoneCode.getBackground().setColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN);
     }
@@ -648,5 +685,41 @@ public class OTPActivity extends AppCompatActivity {
             setResult(RESULT_CANCELED);
             finish();
         }
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+
+        String oldPhoneNumber = phoneNumber.getText().toString();
+        String oldOtpCode = otpCode.getText().toString();
+        Country country = (Country) countrySpinner.getSelectedItem();
+        String oldCountryCode = getString(R.string.phone_code_format, country.getCode().toString());
+
+        setContentView(R.layout.activity_otp);
+        loadViews();
+        initViews();
+        setViewListeners();
+
+        phoneNumber.setText(oldPhoneNumber);
+        otpCode.setText(oldOtpCode);
+
+        if(oldPhoneNumber.trim().equals("")){
+            phoneNumber.setError(emptyPhoneMessage);
+        } else if(oldPhoneNumber.trim().length() != 10){
+            phoneNumber.setError(phoneLengthMessage);
+        } else {
+            phoneNumber.setError(null);
+        }
+
+        if(oldOtpCode.trim().equals("")){
+            otpCode.setError(emptyOTPMessage);
+        } else {
+            otpCode.setError(null);
+        }
+
+        phoneCode.setText(oldCountryCode);
+        countrySpinner.setSelection(countryArrayAdapter.getPosition(country));
+
     }
 }

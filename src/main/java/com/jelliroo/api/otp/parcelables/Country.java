@@ -78,4 +78,21 @@ public class Country implements Parcelable{
     public void setCode(Integer code) {
         this.code = code;
     }
+
+    @Override
+    public int hashCode() {
+        return code;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof Country){
+            Country country = (Country) obj;
+            if(country.code != null && code != null){
+                if(country.code == this.code){
+                    return true;
+                } else return false;
+            } else return false;
+        } else return false;
+    }
 }

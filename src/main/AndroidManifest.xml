@@ -10,7 +10,8 @@
         android:supportsRtl="true">
         <activity
             android:name=".OTPActivity"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar" />
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:configChanges="orientation|screenSize"/>
     </application>
 
 </manifest>
