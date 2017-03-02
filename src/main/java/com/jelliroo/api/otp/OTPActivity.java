@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.SpannableString;
@@ -17,6 +18,7 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.Spinner;
 import android.widget.TextView;
@@ -37,6 +39,13 @@ import retrofit2.Response;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
+/**
+ * @author roger cores
+ * This activity can called in two modes: firebase and local dbase
+ * This activity will verify the users phone number using One Time Password (OTP) and return a result accordingly
+ * For firebase mode, the activity returns a custom token
+ * For local dbase, custom objects can be returned
+ */
 public class OTPActivity extends AppCompatActivity {
 
     private Retrofit retrofit;
@@ -53,9 +62,22 @@ public class OTPActivity extends AppCompatActivity {
     public static String ARG_TOKEN = "ARG_TOKEN";
     public static String ARG_CODE_RESENT = "ARG_CODE_RESENT";
     public static String ARG_RESEND_CODE_MESSAGE = "ARG_RESEND_CODE_MESSAGE";
+    public static String ARG_WAIT_MESSAGE = "ARG_WAIT_MESSAGE";
+    public static String ARG_SERVER_ERROR_MESSAGE = "ARG_SERVER_ERROR_MESSAGE";
+    public static String ARG_VERIFICATION_FAILED_MESSAGE = "ARG_VERIFICATION_FAILED_MESSAGE";
+    public static String ARG_EMPTY_PHONE_ERROR_MESSAGE = "ARG_EMPTY_PHONE_MESSAGE";
+    public static String ARG_PHONE_LENGTH_ERROR_MESSAGE = "ARG_PHONE_LENGTH_ERROR_MESSAGE";
+    public static String ARG_EMPTY_OTP_ERROR_MESSAGE = "ARG_EMPTY_OTP_MESSAGE";
+
 
     public static int TYPE_FIREBASE = 1, TYPE_LOCAL = 2;
 
+    private String waitMessage;
+    private String serverErrorMessage;
+    private String verificationMessage;
+    private String emptyPhoneMessage;
+    private String phoneLengthMessage;
+    private String emptyOTPMessage;
     private String phoneMessage;
     private String otpMessage;
     private String requestSubmitMessage;
@@ -69,12 +91,15 @@ public class OTPActivity extends AppCompatActivity {
     private int authType;
     private ArrayList<Country> countries;
     private boolean otpVerificationMode = false;
+    private boolean loadingMode = false;
 
     private EditText phoneCode, phoneNumber, otpCode;
     private Spinner countrySpinner;
     private Button submit;
     private TextView message, resendCode;
     private RelativeLayout requestOTPContainer, verifyOTPContainer;
+    private ProgressBar progressBar;
+    private CoordinatorLayout coordinatorLayout;
 
     public void loadViews(){
         submit = (Button) findViewById(R.id.submit);
@@ -86,6 +111,8 @@ public class OTPActivity extends AppCompatActivity {
         verifyOTPContainer = (RelativeLayout) findViewById(R.id.verifyOTP);
         countrySpinner = (Spinner) findViewById(R.id.spinner_countries);
         phoneCode = (EditText) findViewById(R.id.phone_code);
+        progressBar = (ProgressBar) findViewById(R.id.otp_progress_bar);
+        coordinatorLayout = (CoordinatorLayout) findViewById(R.id.coordinatorLayout);
     }
 
     public void initViews(){
@@ -110,11 +137,31 @@ public class OTPActivity extends AppCompatActivity {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 if(phoneNumber.getText().toString().trim().equals("")){
-                    phoneNumber.setError(getString(R.string.empty_phone_message));
+                    phoneNumber.setError(emptyPhoneMessage);
+                } else if(phoneNumber.getText().toString().trim().length() != 10) {
+                    phoneNumber.setError(phoneLengthMessage);
                 } else phoneNumber.setError(null);
             }
             @Override
             public void afterTextChanged(Editable s) {}
+        });
+        otpCode.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+                if(otpCode.getText().toString().trim().equals("")){
+                    otpCode.setError(emptyOTPMessage);
+                } else otpCode.setError(null);
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+
+            }
         });
         phoneCode.setOnTouchListener(new View.OnTouchListener() {
             @Override
@@ -143,6 +190,13 @@ public class OTPActivity extends AppCompatActivity {
         codeResentMessage = getIntent().getExtras().getString(OTPActivity.ARG_CODE_RESENT, getString(R.string.default_code_resent_message));
         resendCodeMessage = getIntent().getExtras().getString(OTPActivity.ARG_RESEND_CODE_MESSAGE, getString(R.string.default_resend_code_message));
         baseUrl = getIntent().getExtras().getString(OTPActivity.ARG_BASE_URL);
+
+        waitMessage = getIntent().getExtras().getString(OTPActivity.ARG_WAIT_MESSAGE, getString(R.string.default_wait_message));
+        serverErrorMessage = getIntent().getExtras().getString(OTPActivity.ARG_SERVER_ERROR_MESSAGE, getString(R.string.server_error));
+        verificationMessage = getIntent().getExtras().getString(OTPActivity.ARG_VERIFICATION_FAILED_MESSAGE, getString(R.string.verification_failed_error));
+        emptyPhoneMessage = getIntent().getExtras().getString(OTPActivity.ARG_EMPTY_PHONE_ERROR_MESSAGE, getString(R.string.default_empty_phone_message));
+        phoneLengthMessage = getIntent().getExtras().getString(OTPActivity.ARG_PHONE_LENGTH_ERROR_MESSAGE, getString(R.string.default_phone_length_error_message));
+        emptyOTPMessage = getIntent().getExtras().getString(OTPActivity.ARG_EMPTY_OTP_ERROR_MESSAGE, getString(R.string.default_empty_otp_message));
         if(baseUrl == null || baseUrl.trim().equals("")){
             throw new IllegalArgumentException(getString(R.string.illegal_arguments, getString(R.string.argument_base_url_name)));
         }
@@ -166,18 +220,20 @@ public class OTPActivity extends AppCompatActivity {
                 .build();
     }
 
-    public void resend(View view){
-        requestOTP();
-    }
-
     public void requestOTP(){
         Country country = (Country) countrySpinner.getSelectedItem();
         String phone = country.getCode().toString() + phoneNumber.getText().toString();
 
         if(phoneNumber.getText().toString().trim().equals("")){
-            phoneNumber.setError(getString(R.string.empty_phone_message));
+            phoneNumber.setError(emptyPhoneMessage);
+            return;
+        } else if(phoneNumber.getText().toString().trim().length() != 10){
+            phoneNumber.setError(phoneLengthMessage);
             return;
         }
+
+
+        animateToLoading();
 
         if(authType == OTPActivity.TYPE_FIREBASE){
             FirebaseOTPEndPoint endPoint = retrofit.create(FirebaseOTPEndPoint.class);
@@ -188,17 +244,20 @@ public class OTPActivity extends AppCompatActivity {
                     if(response.code() == HttpURLConnection.HTTP_OK){
                         if(otpVerificationMode){
                             Toast.makeText(OTPActivity.this, codeResentMessage, Toast.LENGTH_LONG).show();
+                            animateToVerify();
                         }
                         else
                             animateToVerify();
                     } else {
-                        Toast.makeText(OTPActivity.this, R.string.server_error, Toast.LENGTH_LONG).show();
+                        Toast.makeText(OTPActivity.this, serverErrorMessage, Toast.LENGTH_LONG).show();
+                        animateToRequest();
                     }
                 }
 
                 @Override
                 public void onFailure(Call<Object> call, Throwable t) {
-                    Toast.makeText(OTPActivity.this, t.getMessage(), Toast.LENGTH_LONG).show();
+                    Toast.makeText(OTPActivity.this, serverErrorMessage, Toast.LENGTH_LONG).show();
+                    animateToRequest();
                 }
             });
         } else {
@@ -212,6 +271,7 @@ public class OTPActivity extends AppCompatActivity {
 
                         if(otpVerificationMode){
                             Toast.makeText(OTPActivity.this, codeResentMessage, Toast.LENGTH_LONG).show();
+                            animateToVerify();
                         } else {
 
                             OTPResponse otpResponse = response.body();
@@ -220,13 +280,15 @@ public class OTPActivity extends AppCompatActivity {
                         }
 
                     } else {
-                        Toast.makeText(OTPActivity.this, R.string.server_error, Toast.LENGTH_LONG).show();
+                        Toast.makeText(OTPActivity.this, serverErrorMessage, Toast.LENGTH_LONG).show();
+                        animateToRequest();
                     }
                 }
 
                 @Override
                 public void onFailure(Call<OTPResponse> call, Throwable t) {
-                    Toast.makeText(OTPActivity.this, R.string.server_error, Toast.LENGTH_LONG).show();
+                    Toast.makeText(OTPActivity.this, serverErrorMessage, Toast.LENGTH_LONG).show();
+                    animateToRequest();
                 }
             });
         }
@@ -236,6 +298,13 @@ public class OTPActivity extends AppCompatActivity {
         Country country = (Country) countrySpinner.getSelectedItem();
         String phone = country.getCode().toString() + phoneNumber.getText().toString();
         String otp = otpCode.getText().toString();
+
+        if(otp.trim().equals("")){
+            otpCode.setError(emptyOTPMessage);
+            return;
+        }
+
+        animateToLoading();
 
         if(authType == TYPE_FIREBASE){
             FirebaseOTPEndPoint endPoint = retrofit.create(FirebaseOTPEndPoint.class);
@@ -250,15 +319,18 @@ public class OTPActivity extends AppCompatActivity {
                         setResult(RESULT_OK, intent);
                         finish();
                     } else if(response.code() == HttpURLConnection.HTTP_NOT_FOUND || response.code() == HttpURLConnection.HTTP_UNAUTHORIZED) {
-                        Toast.makeText(OTPActivity.this, R.string.verification_failed_error, Toast.LENGTH_LONG).show();
+                        Toast.makeText(OTPActivity.this, verificationMessage, Toast.LENGTH_LONG).show();
+                        animateToVerify();
                     } else {
-                        Toast.makeText(OTPActivity.this, R.string.server_error, Toast.LENGTH_LONG).show();
+                        Toast.makeText(OTPActivity.this, serverErrorMessage, Toast.LENGTH_LONG).show();
+                        animateToVerify();
                     }
                 }
 
                 @Override
                 public void onFailure(Call<CustomTokenResponse> call, Throwable t) {
-                    Toast.makeText(OTPActivity.this, R.string.server_error, Toast.LENGTH_LONG).show();
+                    Toast.makeText(OTPActivity.this, serverErrorMessage, Toast.LENGTH_LONG).show();
+                    animateToVerify();
                 }
             });
         }
@@ -272,18 +344,25 @@ public class OTPActivity extends AppCompatActivity {
                         setResult(RESULT_OK);
                         finish();
                     } else if(response.code() == HttpURLConnection.HTTP_NOT_FOUND || response.code() == HttpURLConnection.HTTP_UNAUTHORIZED) {
-                        Toast.makeText(OTPActivity.this, R.string.verification_failed_error, Toast.LENGTH_LONG).show();
+                        Toast.makeText(OTPActivity.this, verificationMessage, Toast.LENGTH_LONG).show();
+                        animateToVerify();
                     } else {
-                        Toast.makeText(OTPActivity.this, R.string.server_error, Toast.LENGTH_LONG).show();
+                        Toast.makeText(OTPActivity.this, serverErrorMessage, Toast.LENGTH_LONG).show();
+                        animateToVerify();
                     }
                 }
 
                 @Override
                 public void onFailure(Call<Object> call, Throwable t) {
-                    Toast.makeText(OTPActivity.this, R.string.server_error, Toast.LENGTH_LONG).show();
+                    Toast.makeText(OTPActivity.this, serverErrorMessage, Toast.LENGTH_LONG).show();
+                    animateToVerify();
                 }
             });
         }
+    }
+
+    public void resend(View view){
+        requestOTP();
     }
 
     public void submit(View view){
@@ -294,7 +373,91 @@ public class OTPActivity extends AppCompatActivity {
         }
     }
 
+    public void animateToLoading(){
+        loadingMode = true;
+        message.animate()
+                .alpha(0f)
+                .setDuration(250)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+                        message.setText(waitMessage);
+                        message.animate()
+                                .alpha(1f)
+                                .setDuration(250);
+                        animation.removeAllListeners();
+                    }
+                });
+
+        progressBar.setVisibility(View.VISIBLE);
+        progressBar.setAlpha(0f);
+        progressBar.animate()
+                   .alpha(1f)
+                   .setDuration(250)
+                   .setListener(new AnimatorListenerAdapter() {
+                       @Override
+                       public void onAnimationEnd(Animator animation) {
+                           super.onAnimationEnd(animation);
+                           animation.removeAllListeners();
+                           progressBar.setAlpha(1f);
+                           progressBar.setVisibility(View.VISIBLE);
+                       }
+                   });
+
+        coordinatorLayout.animate()
+                .alpha(0.3f)
+                .setDuration(250)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+                        animation.removeAllListeners();
+                    }
+                });
+
+
+        submit.setEnabled(false);
+        submit.animate()
+                .alpha(0.3f)
+                .setDuration(250)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+                        animation.removeAllListeners();
+                        submit.setEnabled(false);
+                    }
+                });
+
+        if(otpVerificationMode){
+            otpCode.setEnabled(false);
+            resendCode.setEnabled(false);
+
+            resendCode.animate()
+                      .alpha(0.3f)
+                      .setDuration(250)
+                      .setListener(new AnimatorListenerAdapter() {
+                          @Override
+                          public void onAnimationEnd(Animator animation) {
+                              super.onAnimationEnd(animation);
+                              animation.removeAllListeners();
+                              resendCode.setAlpha(0.3f);
+                              resendCode.setEnabled(false);
+                          }
+                      });
+
+        } else {
+            countrySpinner.setEnabled(false);
+            phoneNumber.setEnabled(false);
+            phoneCode.setEnabled(false);
+        }
+
+
+    }
+
     public void animateToVerify(){
+        loadingMode = false;
         otpVerificationMode = true;
         message.animate()
                 .alpha(0f)
@@ -311,6 +474,7 @@ public class OTPActivity extends AppCompatActivity {
                     }
                 });
 
+
         submit.animate()
                 .alpha(0f)
                 .setDuration(250)
@@ -318,6 +482,7 @@ public class OTPActivity extends AppCompatActivity {
                     @Override
                     public void onAnimationEnd(Animator animation) {
                         super.onAnimationEnd(animation);
+                        submit.setEnabled(true);
                         submit.setText(verifySubmitMessage);
                         submit.animate()
                                 .alpha(1f)
@@ -329,11 +494,33 @@ public class OTPActivity extends AppCompatActivity {
         resendCode.setAlpha(0f);
         resendCode.animate()
                 .alpha(1f)
-                .setDuration(500);
+                .setDuration(250)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+                        resendCode.setEnabled(true);
+                        resendCode.setAlpha(1f);
+                    }
+                });
+        otpCode.setAlpha(1f);
+        otpCode.setEnabled(true);
+
+
+        progressBar.animate()
+                   .alpha(0f)
+                   .setDuration(250)
+                   .setListener(new AnimatorListenerAdapter() {
+                       @Override
+                       public void onAnimationEnd(Animator animation) {
+                           super.onAnimationEnd(animation);
+                           progressBar.setVisibility(View.GONE);
+                       }
+                   });
 
         requestOTPContainer.animate()
                 .alpha(0f)
-                .setDuration(250)
+                .setDuration(125)
                 .setListener(new AnimatorListenerAdapter() {
                     @Override
                     public void onAnimationEnd(Animator animation) {
@@ -343,13 +530,14 @@ public class OTPActivity extends AppCompatActivity {
                         verifyOTPContainer.setAlpha(0f);
                         verifyOTPContainer.animate()
                                 .alpha(1f)
-                                .setDuration(250)
+                                .setDuration(125)
                                 .setListener(new AnimatorListenerAdapter() {
                                     @Override
                                     public void onAnimationEnd(Animator animation) {
                                         super.onAnimationEnd(animation);
                                         verifyOTPContainer.setVisibility(View.VISIBLE);
                                         verifyOTPContainer.setAlpha(1f);
+                                        coordinatorLayout.setAlpha(1f);
                                         animation.removeAllListeners();
                                     }
                                 });
@@ -358,83 +546,104 @@ public class OTPActivity extends AppCompatActivity {
                 });
     }
 
+    public void animateToRequest(){
+        loadingMode = false;
+        otpVerificationMode = false;
+
+
+        message.animate()
+                .alpha(0f)
+                .setDuration(250)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+                        message.setText(phoneMessage);
+                        message.animate()
+                                .alpha(1f)
+                                .setDuration(250);
+                        animation.removeAllListeners();
+                    }
+                });
+
+        submit.animate()
+                .alpha(0f)
+                .setDuration(250)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+                        submit.setText(requestSubmitMessage);
+                        submit.setEnabled(true);
+                        submit.animate()
+                                .alpha(1f)
+                                .setDuration(250);
+                        animation.removeAllListeners();
+                    }
+                });
+
+
+        resendCode.animate()
+                .alpha(0f)
+                .setDuration(500)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+                        resendCode.setVisibility(View.VISIBLE);
+                        animation.removeAllListeners();
+                    }
+                });
+
+        verifyOTPContainer.animate()
+                .alpha(0f)
+                .setDuration(250)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+                        phoneCode.setEnabled(true);
+                        phoneNumber.setEnabled(true);
+                        countrySpinner.setEnabled(true);
+                        verifyOTPContainer.setVisibility(View.GONE);
+                        requestOTPContainer.setVisibility(View.VISIBLE);
+                        requestOTPContainer.setAlpha(0f);
+                        coordinatorLayout.setAlpha(1f);
+                        requestOTPContainer.animate()
+                                .alpha(1f)
+                                .setDuration(250)
+                                .setListener(new AnimatorListenerAdapter() {
+                                    @Override
+                                    public void onAnimationEnd(Animator animation) {
+                                        super.onAnimationEnd(animation);
+                                        requestOTPContainer.setVisibility(View.VISIBLE);
+                                        requestOTPContainer.setAlpha(1f);
+                                        animation.removeAllListeners();
+                                    }
+                                });
+                        animation.removeAllListeners();
+                    }
+                });
+
+
+
+        progressBar.animate()
+                .alpha(0f)
+                .setDuration(250)
+                .setListener(new AnimatorListenerAdapter() {
+                    @Override
+                    public void onAnimationEnd(Animator animation) {
+                        super.onAnimationEnd(animation);
+                        progressBar.setVisibility(View.GONE);
+                    }
+                });
+    }
+
     @Override
     public void onBackPressed() {
+        if(loadingMode) return;
         if(otpVerificationMode){
-
-            otpVerificationMode = false;
-
-            message.animate()
-                    .alpha(0f)
-                    .setDuration(250)
-                    .setListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            super.onAnimationEnd(animation);
-                            message.setText(phoneMessage);
-                            message.animate()
-                                    .alpha(1f)
-                                    .setDuration(250);
-                            animation.removeAllListeners();
-                        }
-                    });
-
-            submit.animate()
-                    .alpha(0f)
-                    .setDuration(250)
-                    .setListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            super.onAnimationEnd(animation);
-                            submit.setText(requestSubmitMessage);
-                            submit.animate()
-                                    .alpha(1f)
-                                    .setDuration(250);
-                            animation.removeAllListeners();
-                        }
-                    });
-
-
-            resendCode.animate()
-                    .alpha(0f)
-                    .setDuration(500)
-                    .setListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            super.onAnimationEnd(animation);
-                            resendCode.setVisibility(View.VISIBLE);
-                            animation.removeAllListeners();
-                        }
-                    });
-
-            verifyOTPContainer.animate()
-                    .alpha(0f)
-                    .setDuration(250)
-                    .setListener(new AnimatorListenerAdapter() {
-                        @Override
-                        public void onAnimationEnd(Animator animation) {
-                            super.onAnimationEnd(animation);
-                            verifyOTPContainer.setVisibility(View.GONE);
-                            requestOTPContainer.setVisibility(View.VISIBLE);
-                            requestOTPContainer.setAlpha(0f);
-                            requestOTPContainer.animate()
-                                    .alpha(1f)
-                                    .setDuration(250)
-                                    .setListener(new AnimatorListenerAdapter() {
-                                        @Override
-                                        public void onAnimationEnd(Animator animation) {
-                                            super.onAnimationEnd(animation);
-                                            requestOTPContainer.setVisibility(View.VISIBLE);
-                                            requestOTPContainer.setAlpha(1f);
-                                            animation.removeAllListeners();
-                                        }
-                                    });
-                            animation.removeAllListeners();
-                        }
-                    });
-
-
-
+            animateToRequest();
         } else {
             setResult(RESULT_CANCELED);
             finish();

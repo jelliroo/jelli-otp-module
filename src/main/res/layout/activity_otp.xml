@@ -10,6 +10,13 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context="com.jelliroo.api.otp.OTPActivity">
 
+    <ProgressBar
+        android:id="@+id/otp_progress_bar"
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:layout_centerInParent="true"
+        android:visibility="gone"/>
+
 
     <android.support.design.widget.CoordinatorLayout
         android:layout_width="wrap_content"
@@ -17,6 +24,8 @@
         android:layout_centerVertical="true"
         android:layout_centerHorizontal="true"
         android:id="@+id/coordinatorLayout">
+
+
 
         <RelativeLayout
             android:id="@+id/requestOTP"
@@ -52,14 +61,13 @@
                     android:maxEms="3"
                     android:maxLength="3"
                     android:minEms="3"
-                    android:textColor="@android:color/black"
                     android:inputType="none"
                     android:clickable="false"
                     android:focusable="false"
                     android:gravity="end"
                     android:layout_alignParentTop="true"
                     android:layout_alignParentStart="true"
-                    tools:ignore="TextFields" />
+                    tools:ignore="LabelFor,TextFields" />
 
                 <EditText
                     android:id="@+id/phone_number"
@@ -69,7 +77,8 @@
                     android:maxEms="10"
                     android:maxLength="10"
                     android:inputType="phone"
-                    android:layout_toEndOf="@id/phone_code"/>
+                    android:layout_toEndOf="@id/phone_code"
+                    tools:ignore="LabelFor" />
 
 
 
@@ -86,7 +95,8 @@
                 android:id="@+id/otp_code"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text"/>
+                android:inputType="text"
+                tools:ignore="LabelFor" />
 
         </RelativeLayout>
 

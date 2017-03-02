@@ -12,6 +12,8 @@
     <string name="default_otp_hint">enter the otp</string>
     <string name="default_code_resent_message">A fresh code has been sent</string>
     <string name="default_resend_code_message">resend the code</string>
+    <string name="default_wait_message">Please wait...</string>
+
 
 
     <!--Argument Names-->
@@ -21,7 +23,6 @@
     <!--EditText Values-->
     <string name="phone_code_format">+%1$s</string>
     <string name="resend_the_code"><u>resend the code</u></string>
-    <string name="empty_phone_message">please fill this up.</string>
 
     <string name="resend_the_code_container"><u>%1$s</u></string>
 

@@ -4,5 +4,8 @@
     <string name="illegal_arguments">Invalid Argument(s): %1$s</string>
     <string name="server_error">Server Error</string>
     <string name="verification_failed_error">Verification Failed</string>
+    <string name="default_empty_phone_message">please fill this up.</string>
+    <string name="default_empty_otp_message">please fill this up.</string>
+    <string name="default_phone_length_error_message">10 digits needed.</string>
 
 </resources>
