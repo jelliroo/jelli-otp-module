@@ -7,7 +7,6 @@ import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.os.Bundle;
-import android.os.Handler;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
@@ -405,6 +404,7 @@ public class OTPActivity extends AppCompatActivity {
     public void submit(View view){
         if(otpVerificationMode){
             verifyOTP();
+
         } else {
             requestOTP();
         }

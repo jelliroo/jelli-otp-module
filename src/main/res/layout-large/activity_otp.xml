@@ -97,7 +97,8 @@
                 android:id="@+id/otp_code"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:inputType="text"
+                android:inputType="number"
+                android:maxLength="6"
                 tools:ignore="LabelFor" />
 
         </RelativeLayout>
