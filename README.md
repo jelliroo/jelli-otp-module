@@ -124,15 +124,15 @@ Screenshots
 
 | Layout | Screenshot |
 |--------|------------|
-|phone layout|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/phone-layout.jpeg" width="250">|
-|phone layout land|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/phone-layout-land.jpeg" height="250">|
-|otp layout|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/otp-layout.jpeg" width="250">|
-|otp layout land|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/otp-layout-land.jpeg" height="250">|
-|phone layout large|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/phone-layout-large.jpeg" width="250">|
-|phone layout land large|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/phone-layout-large-land.jpeg" height="250">|
-|otp layout large|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/otp-layout-large.jpeg" width="250">|
-|otp layout land large|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/otp-layout-large-land.jpeg" height="250">|
-|phone layout xlarge|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/phone-layout-xlarge.jpeg" width="250">|
-|phone layout xland large|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/phone-xlayout-large-land.jpeg" height="250">|
-|otp layout xlarge|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/otp-layout-xlarge.jpeg" width="250">|
-|otp layout xland large|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/otp-layout-xlarge-land.jpeg" height="250">|
+|phone layout|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/phone-layout.png" width="250">|
+|phone layout land|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/phone-layout-land.png" height="250">|
+|otp layout|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/otp-layout.png" width="250">|
+|otp layout land|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/otp-layout-land.png" height="250">|
+|phone layout large|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/phone-layout-large.png" width="250">|
+|phone layout land large|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/phone-layout-large-land.png" height="250">|
+|otp layout large|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/otp-layout-large.png" width="250">|
+|otp layout land large|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/otp-layout-large-land.png" height="250">|
+|phone layout xlarge|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/phone-layout-xlarge.png" width="250">|
+|phone layout xland large|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/phone-layout-xlarge-land.png" height="250">|
+|otp layout xlarge|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/otp-layout-xlarge.png" width="250">|
+|otp layout xland large|<img src="https://raw.github.com/jelliroo/jelli-otp-module/master/shots/otp-layout-xlarge-land.png" height="250">|
